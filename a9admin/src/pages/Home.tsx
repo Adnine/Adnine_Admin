@@ -45,13 +45,15 @@ const Home: React.FC = () => {
               </p>
             </div>
           </Link>
-          <div style={styles.card}>
-            <h3 style={styles.cardTitle}>Promotions</h3>
-            <p style={styles.cardText}>
-              Manage current promotions, create new campaigns, and view
-              performance.
-            </p>
-          </div>
+          <Link to="/tools-promotions">
+            <div style={styles.card}>
+              <h3 style={styles.cardTitle}>Promotions</h3>
+              <p style={styles.cardText}>
+                Manage current promotions, create new campaigns, and view
+                performance.
+              </p>
+            </div>
+          </Link>
         </div>
       </div>
     </div>

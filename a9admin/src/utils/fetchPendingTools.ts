@@ -28,7 +28,7 @@ export interface PendingTool {
   ): Promise<PendingToolsResponse> => {
     try {
       const query = new URLSearchParams({ page: String(page), limit: String(limit) });
-      const res = await fetch(`http://192.168.1.4:3000/api/pending-tools?${query}`);
+      const res = await fetch(`https://adnine-backend.onrender.com/api/pending-tools?${query}`);
       if (!res.ok) {
         throw new Error(`Failed to fetch pending tools: ${res.statusText}`);
       }
@@ -40,7 +40,7 @@ export interface PendingTool {
     }
   };
   export const updateToolStatus = async (toolId: string, newStatus: string) => {
-    const res = await fetch("http://192.168.1.4:3000/api/pending-tools/status", {
+    const res = await fetch("https://adnine-backend.onrender.com/api/pending-tools/status", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ toolId, newStatus }),
@@ -52,4 +52,16 @@ export interface PendingTool {
   
     return res.json();
   };
-  
+  export const fetchToolsWithAds = async () => {
+    try {
+      const res = await fetch(`https://adnine-backend.onrender.com/api/pending-tools/with-ads`);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch tools with ads: ${res.statusText}`);
+      }
+      const data = await res.json();
+      return data; // adjust type if needed
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message || 'Failed to fetch tools with ads');
+    }
+  };

@@ -8,7 +8,7 @@ import {
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import ToolsDashboard from "./pages/ToolsDashboard";
-
+import ToolsPromotions from "./pages/ToolsPromotion";
 const App: React.FC = () => {
   return (
     <Router>
@@ -17,6 +17,7 @@ const App: React.FC = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/home" element={<Home />} />
         <Route path="/tools" element={<ToolsDashboard />} />
+        <Route path="/tools-promotions" element={<ToolsPromotions />} />
       </Routes>
     </Router>
   );
