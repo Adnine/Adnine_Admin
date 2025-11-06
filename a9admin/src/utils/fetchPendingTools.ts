@@ -1,3 +1,5 @@
+
+
 // utils/fetchPendingTools.ts
 export interface PendingTool {
     id: string;
@@ -65,3 +67,4 @@ export interface PendingTool {
       throw new Error(err.message || 'Failed to fetch tools with ads');
     }
   };
+

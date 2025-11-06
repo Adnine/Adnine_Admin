@@ -31,12 +31,14 @@ const Home: React.FC = () => {
 
         {/* --- Card Grid --- */}
         <div style={styles.cardGrid}>
-          <div style={styles.card}>
-            <h3 style={styles.cardTitle}>Dashboard</h3>
-            <p style={styles.cardText}>
-              View key metrics, analytics, and user statistics.
-            </p>
-          </div>
+          <Link to="/users">
+            <div style={styles.card}>
+              <h3 style={styles.cardTitle}>Dashboard</h3>
+              <p style={styles.cardText}>
+                View key metrics, analytics, and user statistics.
+              </p>
+            </div>
+          </Link>
           <Link to="/tools">
             <div style={styles.card}>
               <h3 style={styles.cardTitle}>Tools</h3>
@@ -121,6 +123,8 @@ const styles: StyleMap = {
     borderRadius: "10px",
     padding: "24px",
     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+    height: "100%", // <-- ADD THIS
+    boxSizing: "border-box" as const, // <-- ADD THIS
   },
   cardTitle: {
     fontSize: "18px",
