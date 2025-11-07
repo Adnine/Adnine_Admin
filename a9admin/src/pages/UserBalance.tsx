@@ -284,7 +284,7 @@ const styles: { [key: string]: React.CSSProperties | any } = {
   },
   mainContent: {
     width: "100%",
-    maxWidth: "1200px",
+    maxWidth: "90vw", // <-- Use a viewport width
     margin: "0 auto",
   },
   contentWrapper: {

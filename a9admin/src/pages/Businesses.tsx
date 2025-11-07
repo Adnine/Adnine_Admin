@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchAllUsers, type UserData } from "../utils/fetchUsers";
 
-// Helper function to format date strings
+// Helper function to format date
 const formatDate = (dateString?: string) => {
   if (!dateString) return "N/A";
   try {
@@ -19,24 +19,19 @@ const Businesses: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Load only businesses
+  // Load business accounts
   const loadBusinesses = async () => {
     setLoading(true);
     try {
       const response = await fetchAllUsers({ businesses: true });
-
       if (response?.success && Array.isArray(response.data)) {
         setBusinesses(response.data);
         setFiltered(response.data);
       } else {
         console.warn("Unexpected data format:", response);
-        setBusinesses([]);
-        setFiltered([]);
       }
     } catch (err) {
-      console.error("Failed to load businesses:", err);
-      setBusinesses([]);
-      setFiltered([]);
+      console.error("❌ Failed to load businesses:", err);
     } finally {
       setLoading(false);
     }
@@ -46,7 +41,7 @@ const Businesses: React.FC = () => {
     loadBusinesses();
   }, []);
 
-  // Filter businesses by search term
+  // Search filter
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFiltered(businesses);
@@ -55,7 +50,9 @@ const Businesses: React.FC = () => {
       setFiltered(
         businesses.filter((b) =>
           Object.values(b).some((val) =>
-            String(val).toLowerCase().includes(lower)
+            String(val || "")
+              .toLowerCase()
+              .includes(lower)
           )
         )
       );
@@ -70,15 +67,16 @@ const Businesses: React.FC = () => {
   return (
     <div style={styles.container}>
       <div style={styles.mainContent}>
-        <h2 style={styles.pageTitle}>Businesses Dashboard</h2>
+        <h2 style={styles.pageTitle}>Business Accounts</h2>
         <p style={styles.pageText}>
-          This section displays all registered business accounts.
+          Manage all registered business accounts. You can view their balance,
+          tools, or vacancies.
         </p>
         <button style={styles.backButton} onClick={handleGoBack}>
           &larr; Go Back
         </button>
 
-        {/* Search Section */}
+        {/* Search */}
         <div style={styles.searchSection}>
           <div style={styles.sectionHeader}>
             <h3 style={styles.sectionTitle}>All Businesses</h3>
@@ -106,6 +104,7 @@ const Businesses: React.FC = () => {
           </div>
         </div>
 
+        {/* Table */}
         {loading ? (
           <p>Loading businesses...</p>
         ) : filtered.length === 0 ? (
@@ -128,35 +127,20 @@ const Businesses: React.FC = () => {
               <table style={styles.table}>
                 <thead>
                   <tr style={styles.tableHeaderRow}>
-                    <th style={styles.tableHeader}>User ID</th>
-                    <th style={styles.tableHeader}>Registration Date</th>
-                    <th style={styles.tableHeader}>Username</th>
                     <th style={styles.tableHeader}>Profile Picture</th>
+                    <th style={styles.tableHeader}>Username</th>
                     <th style={styles.tableHeader}>Business Name</th>
-                    <th style={styles.tableHeader}>Initial Date</th>
+                    <th style={styles.tableHeader}>Reg Date</th>
                     <th style={styles.tableHeader}>Location</th>
-                    <th style={styles.tableHeader}>Phone Number</th>
-                    <th style={styles.tableHeader}>Status</th>
-                    <th style={styles.tableHeader}>Slogan</th>
                     <th style={styles.tableHeader}>Email</th>
-                    <th style={styles.tableHeader}>Website</th>
+                    <th style={styles.tableHeader}>Phone</th>
+                    <th style={styles.tableHeader}>Balance</th>
+                    <th style={styles.tableHeader}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((user) => (
-                    <tr
-                      key={user.user_id}
-                      style={{ ...styles.tableRow, cursor: "pointer" }}
-                      onClick={() => navigate(`/user-balance/${user.user_id}`)}
-                      title="Click to view balance"
-                    >
-                      <td style={styles.tableCell} title={user.user_id}>
-                        {user.user_id?.substring(0, 8)}...
-                      </td>
-                      <td style={styles.tableCell}>
-                        {formatDate(user.registration_date)}
-                      </td>
-                      <td style={styles.tableCell}>{user.username || "N/A"}</td>
+                    <tr key={user.user_id} style={styles.tableRow}>
                       <td style={styles.tableCell}>
                         {user.profile_picture ? (
                           <img
@@ -165,23 +149,61 @@ const Businesses: React.FC = () => {
                             style={styles.thumbnail}
                           />
                         ) : (
-                          "N/A"
+                          <span>N/A</span>
                         )}
                       </td>
+                      <td style={styles.tableCell}>{user.username || "N/A"}</td>
                       <td style={styles.tableCell}>
                         {user.business_name || "N/A"}
                       </td>
                       <td style={styles.tableCell}>
-                        {formatDate(user.initial_date) || "N/A"}
+                        {formatDate(user.registration_date)}
                       </td>
                       <td style={styles.tableCell}>{user.location || "N/A"}</td>
+                      <td style={styles.tableCell}>{user.email || "N/A"}</td>
                       <td style={styles.tableCell}>
                         {user.phone_number || "N/A"}
                       </td>
-                      <td style={styles.tableCell}>{user.status || "N/A"}</td>
-                      <td style={styles.tableCell}>{user.slogan || "N/A"}</td>
-                      <td style={styles.tableCell}>{user.email || "N/A"}</td>
-                      <td style={styles.tableCell}>{user.website || "N/A"}</td>
+                      <td style={styles.balanceCell}>
+                        {user.balance ? `${user.balance}` : "—"}
+                      </td>
+                      <td style={{ ...styles.tableCell, whiteSpace: "nowrap" }}>
+                        <div style={styles.actionsContainer}>
+                          <button
+                            style={{
+                              ...styles.actionButton,
+                              background: "#007bff",
+                            }}
+                            onClick={() =>
+                              navigate(`/user-balance/${user.user_id}`)
+                            }
+                          >
+                            View Balance
+                          </button>
+                          <button
+                            style={{
+                              ...styles.actionButton,
+                              background: "#00BDD6",
+                            }}
+                            onClick={() =>
+                              navigate(`/user-tools/${user.user_id}`)
+                            }
+                          >
+                            View Tools
+                          </button>
+                          <button
+                            style={{
+                              ...styles.actionButton,
+                              background: "#7A3FFF",
+                            }}
+                            onClick={() =>
+                              navigate(`/user-vacancies/${user.user_id}`)
+                            }
+                          >
+                            View Vacancies
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -206,19 +228,18 @@ const styles: StyleMap = {
   },
   mainContent: {
     width: "100%",
-    maxWidth: "1200px",
+    maxWidth: "90vw",
     margin: "0 auto",
   },
   pageTitle: {
     color: "#00BDD6",
     fontSize: "22px",
     fontWeight: "bold",
-    marginBottom: "16px",
+    marginBottom: "8px",
   },
   pageText: {
     fontSize: "16px",
-    lineHeight: 1.6,
-    marginBottom: "24px",
+    marginBottom: "20px",
   },
   backButton: {
     backgroundColor: "#007bff",
@@ -227,7 +248,6 @@ const styles: StyleMap = {
     borderRadius: "6px",
     padding: "10px 16px",
     fontSize: "14px",
-    fontWeight: 500,
     cursor: "pointer",
   },
   searchSection: { marginTop: "32px" },
@@ -302,7 +322,7 @@ const styles: StyleMap = {
   table: {
     width: "100%",
     borderCollapse: "collapse",
-    minWidth: "1200px",
+    minWidth: "1100px",
   },
   tableHeaderRow: { borderBottom: "2px solid #00BDD6" },
   tableHeader: {
@@ -320,11 +340,30 @@ const styles: StyleMap = {
     color: "#f0f0f0",
     whiteSpace: "nowrap",
   },
+  balanceCell: {
+    padding: "12px 8px",
+    fontSize: "13px",
+    color: "#00FF9D",
+    whiteSpace: "nowrap",
+  },
   thumbnail: {
     width: "40px",
     height: "40px",
     borderRadius: "50%",
     objectFit: "cover",
+  },
+  actionsContainer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+  },
+  actionButton: {
+    border: "none",
+    color: "white",
+    padding: "6px 12px",
+    borderRadius: "6px",
+    fontSize: "13px",
+    cursor: "pointer",
   },
 };
 

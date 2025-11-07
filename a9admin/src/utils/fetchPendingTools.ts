@@ -68,3 +68,20 @@ export interface PendingTool {
     }
   };
 
+  export const fetchUserTools = async (userId: string) => {
+    try {
+      const res = await fetch(
+        `https://adnine-backend.onrender.com/api/pending-tools/user-tools/${userId}`
+      );
+  
+      if (!res.ok) {
+        throw new Error(`Failed to fetch user tools: ${res.statusText}`);
+      }
+  
+      const data = await res.json();
+      return data; // { success, total, data: [...] }
+    } catch (err: any) {
+      console.error(err);
+      throw new Error(err.message || 'Failed to fetch user tools');
+    }
+  };

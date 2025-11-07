@@ -1,4 +1,3 @@
-// ToolsPage.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -213,12 +212,12 @@ const ToolsPage: React.FC = () => {
           ) : (
             <div style={styles.tableWrapper}>
               <table style={styles.table}>
+                {/* --- MODIFIED THEAD --- */}
                 <thead>
                   <tr style={styles.tableHeaderRow}>
-                    <th style={styles.tableHeader}>ID</th>
-                    <th style={styles.tableHeader}>Tool Name</th>
-                    <th style={styles.tableHeader}>Tool ID</th>
                     <th style={styles.tableHeader}>Image</th>
+                    <th style={styles.tableHeader}>Tool Name</th>
+                    <th style={styles.tableHeader}>Status</th>
                     <th style={styles.tableHeader}>URL</th>
                     <th style={{ ...styles.tableHeader, minWidth: "120px" }}>
                       Plan
@@ -232,24 +231,16 @@ const ToolsPage: React.FC = () => {
                     <th style={{ ...styles.tableHeader, minWidth: "200px" }}>
                       Description
                     </th>
-                    <th style={styles.tableHeader}>Hidden</th>
                     <th style={styles.tableHeader}>Views</th>
                     <th style={styles.tableHeader}>Likes</th>
                     <th style={styles.tableHeader}>Shares</th>
                     <th style={styles.tableHeader}>Comments</th>
-                    <th style={styles.tableHeader}>Status</th>
                   </tr>
                 </thead>
+                {/* --- MODIFIED TBODY --- */}
                 <tbody>
                   {filteredTools.map((tool) => (
                     <tr key={tool.id} style={styles.tableRow}>
-                      <td style={styles.tableCell} title={tool.id}>
-                        {tool.id?.substring(0, 8)}...
-                      </td>
-                      <td style={styles.tableCell}>
-                        {tool.tool_name || "N/A"}
-                      </td>
-                      <td style={styles.tableCell}>{tool.tool_id || "N/A"}</td>
                       <td style={styles.tableCell}>
                         {tool.tool_image ? (
                           <img
@@ -260,6 +251,12 @@ const ToolsPage: React.FC = () => {
                         ) : (
                           "N/A"
                         )}
+                      </td>
+                      <td style={styles.tableCell}>
+                        {tool.tool_name || "N/A"}
+                      </td>
+                      <td style={styles.tableCell}>
+                        <StatusDropdown tool={tool} />
                       </td>
                       <td style={styles.tableCell}>
                         {tool.tool_url ? (
@@ -323,9 +320,6 @@ const ToolsPage: React.FC = () => {
                           {tool.tool_description || "N/A"}
                         </div>
                       </td>
-                      <td style={styles.tableCell}>
-                        {tool.is_hidden ? "Yes" : "No"}
-                      </td>
                       <td style={styles.tableCell}>{tool.views || 0}</td>
                       <td style={styles.tableCell}>
                         {formatLikes(tool.likes)}
@@ -333,9 +327,6 @@ const ToolsPage: React.FC = () => {
                       <td style={styles.tableCell}>{tool.shares || 0}</td>
                       <td style={styles.tableCell}>
                         {formatComments(tool.comments)}
-                      </td>
-                      <td style={styles.tableCell}>
-                        <StatusDropdown tool={tool} />
                       </td>
                     </tr>
                   ))}
@@ -395,7 +386,7 @@ const styles: StyleMap = {
   },
   mainContent: {
     width: "100%",
-    maxWidth: "1200px",
+    maxWidth: "90vw", // <-- Use a viewport width
     margin: "0 auto",
   },
   pageTitle: {
@@ -504,7 +495,7 @@ const styles: StyleMap = {
   table: {
     width: "100%",
     borderCollapse: "collapse",
-    minWidth: "1400px",
+    minWidth: "1200px", // <-- MODIFIED
   },
   tableHeaderRow: {
     borderBottom: "2px solid #00BDD6",

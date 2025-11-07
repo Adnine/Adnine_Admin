@@ -14,6 +14,8 @@ import Businesses from "./pages/Businesses";
 import Explorers from "./pages/Explorers";
 import UserBalance from "./pages/UserBalance";
 import AdnaDashboard from "./pages/AdnaDashboard";
+import UserTools from "./pages/UserTools";
+import VacanciesScreen from "./pages/VacanciesScreen";
 const App: React.FC = () => {
   return (
     <Router>
@@ -28,6 +30,8 @@ const App: React.FC = () => {
         <Route path="/Explorers" element={<Explorers />} />
         <Route path="/user-balance/:user_id" element={<UserBalance />} />
         <Route path="/AdnaDashboard" element={<AdnaDashboard />} />
+        <Route path="/user-tools/:userId" element={<UserTools />} />
+        <Route path="/user-vacancies/:userId" element={<VacanciesScreen />} />
       </Routes>
     </Router>
   );
