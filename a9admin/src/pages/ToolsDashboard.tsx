@@ -102,15 +102,16 @@ const ToolsPage: React.FC = () => {
         onChange={(e) => handleStatusUpdate(tool.id, e.target.value)}
         disabled={updatingToolId === tool.id}
         style={{
-          padding: "4px 8px",
-          borderRadius: "4px",
-          fontSize: "12px",
-          fontWeight: "bold",
+          padding: "6px 10px",
+          borderRadius: "6px",
+          fontSize: "13px",
+          fontWeight: "600",
           border: "none",
           cursor: updatingToolId === tool.id ? "not-allowed" : "pointer",
           backgroundColor: getStatusColor(tool.status),
           color: tool.status === "pending" ? "#000" : "#fff",
-          minWidth: "100px",
+          minWidth: "110px",
+          outline: "none",
         }}
       >
         {statusOptions.map((option) => (
@@ -167,7 +168,6 @@ const ToolsPage: React.FC = () => {
         <div style={{ marginTop: "32px" }}>
           <div style={styles.sectionHeader}>
             <h3 style={styles.sectionTitle}>Pending Tools</h3>
-
             {/* Search Bar */}
             <div style={styles.searchContainer}>
               <div style={styles.searchInputWrapper}>
@@ -212,7 +212,6 @@ const ToolsPage: React.FC = () => {
           ) : (
             <div style={styles.tableWrapper}>
               <table style={styles.table}>
-                {/* --- MODIFIED THEAD --- */}
                 <thead>
                   <tr style={styles.tableHeaderRow}>
                     <th style={styles.tableHeader}>Image</th>
@@ -237,7 +236,6 @@ const ToolsPage: React.FC = () => {
                     <th style={styles.tableHeader}>Comments</th>
                   </tr>
                 </thead>
-                {/* --- MODIFIED TBODY --- */}
                 <tbody>
                   {filteredTools.map((tool) => (
                     <tr key={tool.id} style={styles.tableRow}>
@@ -378,30 +376,33 @@ type StyleMap = { [key: string]: React.CSSProperties };
 const styles: StyleMap = {
   container: {
     minHeight: "100vh",
-    padding: "32px",
-    background: "linear-gradient(to bottom, #160F24, #24213C, #2E1F3A)",
-    fontFamily: "system-ui, Avenir, Helvetica, Arial, sans-serif",
+    padding: "0px 24px",
+    background:
+      "linear-gradient(135deg, #0f0c1d 0%, #1a1635 50%, #251d3a 100%)",
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
     color: "#f0f0f0",
     boxSizing: "border-box",
   },
   mainContent: {
     width: "100%",
-    maxWidth: "90vw", // <-- Use a viewport width
+    maxWidth: "90vw",
     margin: "0 auto",
   },
   pageTitle: {
     color: "#00BDD6",
-    fontSize: "22px",
-    fontWeight: "bold",
-    marginBottom: "16px",
+    fontSize: "28px",
+    fontWeight: "700",
+    marginBottom: "8px",
+    letterSpacing: "-0.5px",
   },
   pageText: {
-    fontSize: "16px",
+    fontSize: "15px",
     lineHeight: 1.6,
     marginBottom: "24px",
+    color: "rgba(240, 240, 240, 0.8)",
   },
   backButton: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#8050E6",
     color: "white",
     border: "none",
     borderRadius: "6px",
@@ -487,41 +488,47 @@ const styles: StyleMap = {
   },
   tableWrapper: {
     overflowX: "auto",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: "8px",
-    padding: "16px",
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    borderRadius: "12px",
+    padding: "0",
     marginBottom: "16px",
+    border: "1px solid rgba(0, 189, 214, 0.1)",
+    boxShadow: "0 4px 24px rgba(0, 0, 0, 0.4)",
   },
   table: {
     width: "100%",
     borderCollapse: "collapse",
-    minWidth: "1200px", // <-- MODIFIED
+    minWidth: "1200px",
   },
   tableHeaderRow: {
-    borderBottom: "2px solid #00BDD6",
+    borderBottom: "2px solid rgba(0, 189, 214, 0.3)",
+    background: "rgba(0, 189, 214, 0.05)",
   },
   tableHeader: {
-    padding: "12px 8px",
+    padding: "16px 12px",
     textAlign: "left",
     color: "#00BDD6",
-    fontWeight: "bold",
-    fontSize: "14px",
+    fontWeight: "600",
+    fontSize: "13px",
     whiteSpace: "nowrap",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
   },
   tableRow: {
-    borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+    borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+    transition: "background-color 0.2s",
   },
   tableCell: {
-    padding: "12px 8px",
-    fontSize: "13px",
+    padding: "14px 12px",
+    fontSize: "14px",
     color: "#f0f0f0",
     whiteSpace: "nowrap",
     position: "relative",
     verticalAlign: "top",
   },
   descriptionCell: {
-    padding: "12px 8px",
-    fontSize: "13px",
+    padding: "14px 12px",
+    fontSize: "14px",
     color: "#f0f0f0",
     verticalAlign: "top",
   },
@@ -530,8 +537,8 @@ const styles: StyleMap = {
     overflow: "auto",
     lineHeight: "1.4",
     wordWrap: "break-word",
-    padding: "4px",
-    borderRadius: "4px",
+    padding: "8px",
+    borderRadius: "6px",
     backgroundColor: "rgba(255, 255, 255, 0.05)",
   },
   truncateText: {
@@ -541,14 +548,16 @@ const styles: StyleMap = {
     maxWidth: "100%",
   },
   thumbnail: {
-    width: "40px",
-    height: "40px",
+    width: "42px",
+    height: "42px",
     objectFit: "cover",
-    borderRadius: "4px",
+    borderRadius: "6px",
+    border: "2px solid rgba(0, 189, 214, 0.3)",
   },
   link: {
     color: "#00BDD6",
     textDecoration: "none",
+    fontWeight: "500",
   },
   pagination: {
     marginTop: "16px",
@@ -565,6 +574,7 @@ const styles: StyleMap = {
     fontSize: "14px",
     fontWeight: 500,
     cursor: "pointer",
+    transition: "opacity 0.2s",
   },
 };
 

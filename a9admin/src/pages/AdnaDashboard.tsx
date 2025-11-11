@@ -2,6 +2,17 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchAllUserBalances } from "../utils/fetchUsers";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  MdArrowBack,
+  MdAccountBalanceWallet,
+  MdTrendingUp,
+  MdTrendingDown,
+  MdPeople,
+  MdDownload,
+  MdExpandMore,
+  MdExpandLess,
+  MdAttachMoney,
+} from "react-icons/md";
 
 // --- Backend response types ---
 interface Transaction {
@@ -9,7 +20,7 @@ interface Transaction {
   amount: string;
   created_at: string;
   engine_used: string;
-  historyDate?: string; // For display
+  historyDate?: string;
 }
 
 interface HistoryItem {
@@ -17,14 +28,12 @@ interface HistoryItem {
   transactions: Transaction[];
 }
 
-// Represents the data for a single user in the admin response
 interface UserBalanceSummary {
   user_id: string;
   total_balance: number;
   history: HistoryItem[];
 }
 
-// Copied from UserBalance
 interface EngineGroup {
   engine: string;
   transactions: Transaction[];
@@ -32,7 +41,6 @@ interface EngineGroup {
 
 type AdminBalanceResponse = UserBalanceSummary[];
 
-// Data type for the chart
 interface ChartData {
   name: string;
   value: number;
@@ -51,12 +59,9 @@ const COLORS = [
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  // State to hold the array of all users
   const [usersData, setUsersData] = useState<UserBalanceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // --- State for selected user's details ---
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserEngineGroups, setSelectedUserEngineGroups] = useState<
     EngineGroup[]
@@ -79,36 +84,29 @@ const AdminDashboard: React.FC = () => {
       }
     };
     loadAdminData();
-  }, []); // No dependencies, runs once on mount
+  }, []);
 
-  // --- Combined useMemo for all platform stats ---
   const { platformBalance, totalUsage, totalTopUp, chartData } = useMemo(() => {
     let platformBalance = 0;
     let totalUsage = 0;
     let totalTopUp = 0;
     const usageData: { [key: string]: number } = {};
 
-    // 1. Calculate platform balance
     platformBalance = usersData.reduce(
       (sum, user) => sum + (user.total_balance || 0),
       0
     );
 
-    // 2. Iterate all transactions for usage, topup, and chart data
     usersData.forEach((user) => {
       (user.history || []).forEach((h) => {
         (h.transactions || []).forEach((t) => {
           const amount = parseFloat(t.amount);
-          if (isNaN(amount)) return; // Skip invalid data
+          if (isNaN(amount)) return;
 
           if (amount > 0) {
-            // This is a "Top Up"
             totalTopUp += amount;
           } else if (amount < 0) {
-            // This is "Usage"
             totalUsage += Math.abs(amount);
-
-            // Add to chart data (following original logic)
             const engine =
               !t.engine_used || t.engine_used === "N/A"
                 ? "Top Up"
@@ -119,7 +117,6 @@ const AdminDashboard: React.FC = () => {
       });
     });
 
-    // 3. Format chart data
     const formattedChartData = Object.entries(usageData).map(
       ([engine, usage]) => ({
         name: engine,
@@ -134,11 +131,8 @@ const AdminDashboard: React.FC = () => {
       chartData: formattedChartData,
     };
   }, [usersData]);
-  // --- End new useMemo ---
 
-  // --- Click handler to show user details inline ---
   const handleUserClick = (userId: string) => {
-    // If clicking the same user, close the details
     if (selectedUserId === userId) {
       setSelectedUserId(null);
       setSelectedUserEngineGroups([]);
@@ -146,11 +140,9 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
-    // Find the user's data
     const selectedUser = usersData.find((u) => u.user_id === userId);
     if (!selectedUser) return;
 
-    // Process this user's transactions (logic from UserBalance)
     const allTransactions = (selectedUser.history || []).flatMap((h) =>
       (h.transactions || []).map((t) => ({
         ...t,
@@ -174,13 +166,11 @@ const AdminDashboard: React.FC = () => {
       ([engine, transactions]) => ({ engine, transactions })
     );
 
-    // Set the state to display this user's details
     setSelectedUserId(userId);
     setSelectedUserEngineGroups(engineGroupsArray);
-    setSelectedUserOpenGroups([]); // Close all groups on new selection
+    setSelectedUserOpenGroups([]);
   };
 
-  // --- Toggle handler for the SELECTED user's groups ---
   const toggleSelectedUserGroup = (engine: string) => {
     setSelectedUserOpenGroups((prevOpenGroups) => {
       const isOpen = prevOpenGroups.includes(engine);
@@ -192,48 +182,35 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
-  // --- NEW: Function to export selected user's transactions as CSV ---
   const handleExportCSV = () => {
     if (!selectedUserId || selectedUserEngineGroups.length === 0) return;
 
-    // 1. Flatten all transactions from the selected user's groups
     const transactionsToExport = selectedUserEngineGroups.flatMap(
       (group) => group.transactions
     );
 
-    // 2. Define headers
     const headers = ["Date", "Description", "Engine", "Amount"];
     let csvContent = headers.join(",") + "\n";
 
-    // 3. Add data rows
     transactionsToExport.forEach((t) => {
       const engine =
         !t.engine_used || t.engine_used === "N/A" ? "Top Up" : t.engine_used;
-
-      // Escape commas in description by wrapping in quotes
-      // Also escape double quotes inside the description by doubling them
       const description = `"${t.description.replace(/"/g, '""')}"`;
-
       const row = [t.historyDate, description, engine, t.amount];
       csvContent += row.join(",") + "\n";
     });
 
-    // 4. Create and download blob
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
     link.setAttribute("download", `transactions-${selectedUserId}.csv`);
-    document.body.appendChild(link); // Required for Firefox
+    document.body.appendChild(link);
     link.click();
-
-    // 5. Clean up
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-  // --- END NEW ---
 
-  // Custom tooltip for the PieChart
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0];
@@ -254,48 +231,74 @@ const AdminDashboard: React.FC = () => {
   return (
     <div style={styles.container}>
       <div style={styles.mainContent}>
-        <h2 style={styles.pageTitle}>Admin Dashboard</h2>
+        {/* Back Button */}
         <button style={styles.backButton} onClick={() => navigate(-1)}>
-          &larr; Go Back
+          <MdArrowBack size={18} style={styles.buttonIcon} />
+          Go Back
         </button>
+
+        <h2 style={styles.pageTitle}>
+          <MdAccountBalanceWallet size={28} style={styles.titleIcon} />
+          Admin Dashboard
+        </h2>
 
         <div style={styles.contentWrapper}>
           {loading ? (
-            <p>Loading dashboard data...</p>
+            <p style={styles.loadingText}>Loading dashboard data...</p>
           ) : error ? (
-            <p style={{ color: "red" }}>Error: {error}</p>
+            <p style={styles.errorText}>Error: {error}</p>
           ) : (
             <>
-              {/* --- Summary Cards --- */}
-              <div style={styles.summaryContainer}>
-                <div style={styles.summaryCard}>
-                  <p style={styles.label}>Total Top Up</p>
-                  <p style={styles.balancePositive}>
-                    {totalTopUp?.toFixed(2) || "0.00"}
-                  </p>
+              {/* Summary Cards */}
+              <div style={styles.cardsGrid}>
+                <div style={styles.card}>
+                  <div style={styles.cardHeader}>
+                    <MdTrendingUp
+                      size={24}
+                      style={{ ...styles.cardIcon, color: "#00FF9D" }}
+                    />
+                    <h3 style={styles.cardTitle}>Total Top Up</h3>
+                  </div>
+                  <p style={styles.topUp}>{totalTopUp?.toFixed(2) || "0.00"}</p>
                 </div>
-                <div style={styles.summaryCard}>
-                  <p style={styles.label}>Total Used Credits</p>
-                  <p style={styles.balanceNegative}>
-                    {totalUsage?.toFixed(2) || "0.00"}
-                  </p>
+
+                <div style={styles.card}>
+                  <div style={styles.cardHeader}>
+                    <MdTrendingDown
+                      size={24}
+                      style={{ ...styles.cardIcon, color: "#FF6B6B" }}
+                    />
+                    <h3 style={styles.cardTitle}>Total Used Credits</h3>
+                  </div>
+                  <p style={styles.used}>{totalUsage?.toFixed(2) || "0.00"}</p>
                 </div>
-                <div style={styles.summaryCard}>
-                  <p style={styles.label}>Total Platform Balance</p>
+
+                <div style={styles.card}>
+                  <div style={styles.cardHeader}>
+                    <MdAttachMoney size={24} style={styles.cardIcon} />
+                    <h3 style={styles.cardTitle}>Platform Balance</h3>
+                  </div>
                   <p style={styles.balance}>
                     {platformBalance?.toFixed(2) || "0.00"}
                   </p>
                 </div>
-                <div style={styles.summaryCard}>
-                  <p style={styles.label}>Total Users</p>
-                  <p style={styles.balance}>{usersData.length}</p>
+
+                <div style={styles.card}>
+                  <div style={styles.cardHeader}>
+                    <MdPeople size={24} style={styles.cardIcon} />
+                    <h3 style={styles.cardTitle}>Total Users</h3>
+                  </div>
+                  <p style={styles.usersCount}>{usersData.length}</p>
                 </div>
               </div>
 
-              {/* --- Engine Usage Diagram --- */}
+              {/* Engine Usage Diagram */}
               {chartData.length > 0 && (
                 <div style={styles.chartContainer}>
-                  <h3 style={styles.chartTitle}>Total Engine Usage</h3>
+                  <h3 style={styles.chartTitle}>
+                    <MdTrendingUp size={20} style={styles.titleIcon} />
+                    Total Engine Usage
+                  </h3>
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
                       <Pie
@@ -328,58 +331,48 @@ const AdminDashboard: React.FC = () => {
                             backgroundColor: COLORS[index % COLORS.length],
                           }}
                         ></span>
-                        <span>{entry.name}</span>
+                        <span style={styles.legendText}>{entry.name}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* --- User List (with inline expandable rows) --- */}
+              {/* User List */}
               <div style={styles.userListContainer}>
-                <h3 style={styles.chartTitle}>User Balances</h3>
+                <h3 style={styles.sectionTitle}>
+                  <MdPeople size={20} style={styles.titleIcon} />
+                  User Balances
+                </h3>
                 <div style={styles.userListHeader}>
                   <span>User ID</span>
                   <span>Balance</span>
                 </div>
                 {usersData.map((user) => (
                   <React.Fragment key={user.user_id}>
-                    {/* --- This is the Clickable User Row (NOW HIGHLIGHTS) --- */}
                     <div
                       style={styles.userRow(selectedUserId === user.user_id)}
                       onClick={() => handleUserClick(user.user_id)}
                     >
-                      <span style={styles.transactionDescription}>
-                        {user.user_id}
-                      </span>
-                      <span
-                        style={styles.transactionAmount(
-                          (user.total_balance || 0).toString()
-                        )}
-                      >
+                      <span style={styles.userId}>{user.user_id}</span>
+                      <span style={styles.userBalance(user.total_balance || 0)}>
                         {(user.total_balance || 0).toFixed(2)}
                       </span>
                     </div>
 
-                    {/* --- Inline Expandable Details --- */}
                     {selectedUserId === user.user_id && (
                       <div style={styles.detailsContainer}>
                         {selectedUserEngineGroups.length === 0 ? (
-                          <p
-                            style={{
-                              ...styles.transactionDescription,
-                              padding: "12px",
-                            }}
-                          >
+                          <p style={styles.noTransactions}>
                             No transactions found for this user.
                           </p>
                         ) : (
-                          // --- NEW: Fragment to hold button and list ---
                           <>
                             <button
                               style={styles.exportButton}
                               onClick={handleExportCSV}
                             >
+                              <MdDownload size={16} style={styles.buttonIcon} />
                               Export as CSV
                             </button>
 
@@ -398,9 +391,15 @@ const AdminDashboard: React.FC = () => {
                                       toggleSelectedUserGroup(group.engine)
                                     }
                                   >
-                                    <span>{group.engine}</span>
+                                    <span style={styles.groupTitle}>
+                                      {group.engine}
+                                    </span>
                                     <span style={styles.groupArrow}>
-                                      {isOpen ? "▼" : "►"}
+                                      {isOpen ? (
+                                        <MdExpandLess size={18} />
+                                      ) : (
+                                        <MdExpandMore size={18} />
+                                      )}
                                     </span>
                                   </div>
 
@@ -429,7 +428,7 @@ const AdminDashboard: React.FC = () => {
                                           </div>
                                           <span
                                             style={styles.transactionAmount(
-                                              t.amount
+                                              parseFloat(t.amount)
                                             )}
                                           >
                                             {t.amount}
@@ -445,7 +444,6 @@ const AdminDashboard: React.FC = () => {
                         )}
                       </div>
                     )}
-                    {/* --- End Inline Expandable Details --- */}
                   </React.Fragment>
                 ))}
               </div>
@@ -457,14 +455,15 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-// --- STYLES ---
+// Styles
 const styles: { [key: string]: React.CSSProperties | any } = {
   container: {
     minHeight: "100vh",
-    background: "linear-gradient(to bottom, #160F24, #24213C, #2E1F3A)",
+    background:
+      "linear-gradient(135deg, #0f0c1d 0%, #1a1635 50%, #251d3a 100%)",
     color: "#f0f0f0",
     padding: "32px",
-    fontFamily: "system-ui, Avenir, Helvetica, Arial, sans-serif",
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
   },
   mainContent: {
     width: "100%",
@@ -479,85 +478,132 @@ const styles: { [key: string]: React.CSSProperties | any } = {
   },
   pageTitle: {
     color: "#00BDD6",
-    fontSize: "22px",
+    fontSize: "28px",
     fontWeight: "bold",
-    marginBottom: "16px",
+    marginBottom: "24px",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+  },
+  titleIcon: {
+    marginRight: "8px",
   },
   backButton: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#8050E6",
     color: "white",
     border: "none",
-    borderRadius: "6px",
-    padding: "10px 16px",
+    borderRadius: "8px",
+    padding: "12px 20px",
     fontSize: "14px",
     fontWeight: 500,
     cursor: "pointer",
-  },
-  // --- NEW: Export Button Style ---
-  exportButton: {
-    backgroundColor: "#00FFAB",
-    color: "#160F24",
-    border: "none",
-    borderRadius: "6px",
-    padding: "10px 16px",
-    fontSize: "14px",
-    fontWeight: "bold",
-    cursor: "pointer",
-    marginBottom: "16px",
-    display: "inline-block",
+    marginBottom: "20px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
     transition: "background-color 0.2s ease",
   },
-  // ---
-  label: {
+  buttonIcon: {
+    marginRight: "4px",
+  },
+  // Cards Grid
+  cardsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: "24px",
+    marginBottom: "32px",
+  },
+  card: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: "16px",
+    padding: "24px",
+    border: "1px solid rgba(0, 189, 214, 0.2)",
+    textAlign: "center",
+    backdropFilter: "blur(10px)",
+  },
+  cardHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "12px",
+    marginBottom: "16px",
+  },
+  cardIcon: {
     color: "#00BDD6",
+  },
+  cardTitle: {
+    color: "#00BDD6",
+    fontSize: "16px",
+    fontWeight: "600",
+    margin: 0,
+  },
+  topUp: {
+    fontSize: "32px",
     fontWeight: "bold",
-    marginTop: "12px",
-    marginBottom: "4px",
+    color: "#00FF9D",
+    margin: 0,
+  },
+  used: {
+    fontSize: "32px",
+    fontWeight: "bold",
+    color: "#FF6B6B",
+    margin: 0,
   },
   balance: {
-    fontSize: "28px",
+    fontSize: "32px",
     fontWeight: "bold",
-    color: "#00BDD6", // Teal
-    marginTop: "8px",
+    color: "#00BDD6",
+    margin: 0,
   },
-  balancePositive: {
-    fontSize: "28px",
+  usersCount: {
+    fontSize: "32px",
     fontWeight: "bold",
-    color: "#00FFAB", // Green
-    marginTop: "8px",
+    color: "#00BDD6",
+    margin: 0,
   },
-  balanceNegative: {
-    fontSize: "28px",
-    fontWeight: "bold",
-    color: "#FF6B6B", // Red
-    marginTop: "8px",
+  loadingText: {
+    color: "#aaa",
+    fontSize: "16px",
+    textAlign: "center",
+    padding: "40px",
+  },
+  errorText: {
+    color: "#FF6B6B",
+    fontSize: "16px",
+    textAlign: "center",
+    padding: "40px",
   },
   chartContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: "8px",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: "16px",
     padding: "24px",
-    marginBottom: "24px",
-    textAlign: "center",
+    marginBottom: "32px",
+    border: "1px solid rgba(0, 189, 214, 0.2)",
+    backdropFilter: "blur(10px)",
   },
   chartTitle: {
     color: "#00BDD6",
-    fontSize: "18px",
+    fontSize: "20px",
     fontWeight: "bold",
-    marginBottom: "16px",
+    marginBottom: "20px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
   },
   customTooltip: {
     backgroundColor: "#2e1f3a",
     border: "1px solid #00BDD6",
-    padding: "10px",
-    borderRadius: "4px",
+    padding: "12px",
+    borderRadius: "8px",
     color: "#f0f0f0",
-    fontSize: "13px",
+    fontSize: "14px",
+    backdropFilter: "blur(10px)",
   },
   chartLegend: {
     display: "flex",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: "10px 20px",
+    gap: "12px 24px",
     marginTop: "20px",
   },
   legendItem: {
@@ -572,100 +618,131 @@ const styles: { [key: string]: React.CSSProperties | any } = {
     borderRadius: "3px",
     marginRight: "8px",
   },
-  transactionAmount: (amount: string): React.CSSProperties => ({
-    color: parseFloat(amount) < 0 ? "#FF6B6B" : "#00FFAB",
-    fontWeight: "bold",
+  legendText: {
     fontSize: "14px",
-    marginLeft: "16px",
-    flexShrink: 0,
-  }),
-  // --- Summary & User List Styles ---
-  summaryContainer: {
-    display: "flex",
-    flexWrap: "wrap", // Allow wrapping on smaller screens
-    gap: "16px",
-    marginBottom: "16px",
   },
-  summaryCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: "8px",
-    padding: "24px",
-    flex: 1, // Each card takes equal space
-    minWidth: "200px", // Prevent cards from getting too small
+  sectionTitle: {
+    color: "#00BDD6",
+    fontSize: "20px",
+    fontWeight: "bold",
+    marginBottom: "20px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
   },
   userListContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: "8px",
-    padding: "16px 24px 24px 24px",
-    marginBottom: "16px",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: "16px",
+    padding: "24px",
+    border: "1px solid rgba(0, 189, 214, 0.2)",
+    backdropFilter: "blur(10px)",
   },
   userListHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "8px 12px",
-    borderBottom: "1px solid rgba(0, 189, 214, 0.3)",
+    padding: "16px 20px",
+    borderBottom: "2px solid rgba(0, 189, 214, 0.3)",
     color: "#00BDD6",
-    fontWeight: "bold",
-    fontSize: "14px",
+    fontWeight: "600",
+    fontSize: "16px",
   },
-  // --- MODIFIED: userRow is now a function ---
   userRow: (isSelected: boolean): React.CSSProperties => ({
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    // Conditionally change background and add a border if selected
     backgroundColor: isSelected
       ? "rgba(0, 189, 214, 0.1)"
-      : "rgba(255,255,255,0.05)",
-    borderLeft: isSelected ? "3px solid #00FFAB" : "3px solid transparent",
-    padding: "12px",
-    paddingLeft: isSelected ? "9px" : "12px", // Adjust padding for the border
-    borderRadius: "6px",
+      : "rgba(255,255,255,0.03)",
+    borderLeft: isSelected ? "4px solid #00FF9D" : "4px solid transparent",
+    padding: "16px 20px",
+    borderRadius: "8px",
     marginTop: "8px",
     cursor: "pointer",
-    transition: "all 0.2s ease",
+    transition: "all 0.3s ease",
+    border: isSelected
+      ? "1px solid rgba(0, 189, 214, 0.3)"
+      : "1px solid transparent",
   }),
-  // --- Container for the expanded details ---
-  detailsContainer: {
-    backgroundColor: "rgba(0, 0, 0, 0.15)",
-    borderRadius: "6px",
-    margin: "4px 0 8px 0",
-    padding: "12px",
+  userId: {
+    fontSize: "14px",
+    color: "#f0f0f0",
+    fontWeight: "500",
   },
-  // --- Styles for collapsible groups (now used inside detailsContainer) ---
+  userBalance: (balance: number): React.CSSProperties => ({
+    color: balance >= 0 ? "#00FF9D" : "#FF6B6B",
+    fontWeight: "600",
+    fontSize: "16px",
+  }),
+  detailsContainer: {
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    borderRadius: "12px",
+    margin: "8px 0 16px 0",
+    padding: "20px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+  },
+  noTransactions: {
+    color: "#aaa",
+    fontSize: "14px",
+    textAlign: "center",
+    padding: "20px",
+    margin: 0,
+  },
+  exportButton: {
+    backgroundColor: "rgba(0, 255, 157, 0.1)",
+    color: "#00FF9D",
+    border: "2px solid #00FF9D",
+    borderRadius: "8px",
+    padding: "12px 20px",
+    fontSize: "14px",
+    fontWeight: "600",
+    cursor: "pointer",
+    marginBottom: "20px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    transition: "all 0.3s ease",
+    backdropFilter: "blur(5px)",
+  },
   groupContainer: {
     marginBottom: "16px",
     backgroundColor: "rgba(255, 255, 255, 0.03)",
-    borderRadius: "8px",
+    borderRadius: "12px",
     overflow: "hidden",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
   },
   groupHeader: {
     color: "#00BDD6",
-    fontSize: "18px",
-    fontWeight: "bold",
-    padding: "12px 16px",
+    fontSize: "16px",
+    fontWeight: "600",
+    padding: "16px 20px",
     cursor: "pointer",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "rgba(0, 189, 214, 0.1)",
+    transition: "background-color 0.3s ease",
+  },
+  groupTitle: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
   },
   groupArrow: {
-    fontSize: "14px",
     color: "#00BDD6",
   },
   transactionList: {
-    padding: "8px 16px 16px 16px",
+    padding: "12px 20px 20px 20px",
   },
   transactionRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.05)",
-    padding: "8px 12px",
-    borderRadius: "6px",
-    marginTop: "6px",
+    padding: "12px 16px",
+    borderRadius: "8px",
+    marginTop: "8px",
+    border: "1px solid rgba(255, 255, 255, 0.05)",
   },
   transactionDetails: {
     display: "flex",
@@ -675,12 +752,19 @@ const styles: { [key: string]: React.CSSProperties | any } = {
   transactionDescription: {
     fontSize: "14px",
     color: "#f0f0f0",
+    fontWeight: "500",
   },
   transactionDate: {
     fontSize: "12px",
     color: "#aaa",
-    marginTop: "2px",
+    marginTop: "4px",
   },
+  transactionAmount: (amount: number): React.CSSProperties => ({
+    color: amount < 0 ? "#FF6B6B" : "#00FF9D",
+    fontWeight: "600",
+    fontSize: "14px",
+    flexShrink: 0,
+  }),
 };
 
 export default AdminDashboard;

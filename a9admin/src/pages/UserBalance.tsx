@@ -1,7 +1,16 @@
-import React, { useEffect, useState, useMemo } from "react"; // Added useMemo
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useEffect, useState, useMemo } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { fetchUserBalance } from "../utils/fetchUsers";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts"; // Import Recharts components
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  MdArrowBack,
+  MdAccountCircle,
+  MdAccountBalanceWallet,
+  MdBusiness,
+  MdPerson,
+  MdTrendingUp,
+  MdTrendingDown,
+} from "react-icons/md";
 
 // Backend response types
 interface Transaction {
@@ -48,12 +57,18 @@ const COLORS = [
 const UserBalance: React.FC = () => {
   const { user_id } = useParams<{ user_id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [balance, setBalance] = useState<number | null>(null);
   const [engineGroups, setEngineGroups] = useState<EngineGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
-  const [chartData, setChartData] = useState<ChartData[]>([]); // New state for chart data
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [totalTopUp, setTotalTopUp] = useState<number>(0);
+  const [totalUsed, setTotalUsed] = useState<number>(0);
+
+  // Get user profile data from navigation state
+  const { profilePicture, username, businessName } = location.state || {};
 
   useEffect(() => {
     if (!user_id) return;
@@ -70,6 +85,22 @@ const UserBalance: React.FC = () => {
             historyDate: h.date,
           }))
         );
+
+        // Calculate total top up and total used
+        let topUpTotal = 0;
+        let usedTotal = 0;
+
+        allTransactions.forEach((t) => {
+          const amount = parseFloat(t.amount);
+          if (amount > 0) {
+            topUpTotal += amount;
+          } else {
+            usedTotal += Math.abs(amount);
+          }
+        });
+
+        setTotalTopUp(topUpTotal);
+        setTotalUsed(usedTotal);
 
         const grouped: { [key: string]: Transaction[] } = {};
         allTransactions.forEach((t) => {
@@ -88,7 +119,7 @@ const UserBalance: React.FC = () => {
         );
         setEngineGroups(engineGroupsArray);
 
-        // --- Prepare data for the chart ---
+        // Prepare data for the chart
         const usageData: { [key: string]: number } = {};
         allTransactions.forEach((t) => {
           let engine: string;
@@ -107,14 +138,10 @@ const UserBalance: React.FC = () => {
         const formattedChartData: ChartData[] = Object.entries(usageData).map(
           ([engine, totalUsage]) => ({
             name: engine,
-            value: parseFloat(totalUsage.toFixed(2)), // Ensure number format
+            value: parseFloat(totalUsage.toFixed(2)),
           })
         );
         setChartData(formattedChartData);
-        // --- End preparing chart data ---
-
-        // Optional: Uncomment this line to have all groups open by default
-        // setOpenGroups(engineGroupsArray.map(g => g.engine));
       } catch (err: any) {
         console.error("Error fetching balance:", err);
         setError(err.message || "Failed to fetch balance");
@@ -137,12 +164,9 @@ const UserBalance: React.FC = () => {
   };
 
   // Custom tooltip for the PieChart
-  // Custom tooltip for the PieChart
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0];
-
-      // Calculate total for percentage
       const total = chartData.reduce((sum, item) => sum + item.value, 0);
       const percentage = total > 0 ? (data.value / total) * 100 : 0;
 
@@ -156,29 +180,92 @@ const UserBalance: React.FC = () => {
     }
     return null;
   };
+
   return (
     <div style={styles.container}>
       <div style={styles.mainContent}>
-        <h2 style={styles.pageTitle}>User Balance</h2>
+        {/* Back Button - Now at the top */}
         <button style={styles.backButton} onClick={() => navigate(-1)}>
-          &larr; Go Back
+          <MdArrowBack size={18} style={styles.buttonIcon} />
+          Go Back
         </button>
+
+        {/* User Profile Header */}
+        <div style={styles.userInfoSection}>
+          <div style={styles.userProfile}>
+            {profilePicture ? (
+              <img
+                src={profilePicture}
+                alt={username || businessName}
+                style={styles.profileImage}
+              />
+            ) : (
+              <div style={styles.profilePlaceholder}>
+                <MdAccountCircle size={32} />
+              </div>
+            )}
+            <div style={styles.userDetails}>
+              <h2 style={styles.userName}>
+                <MdAccountBalanceWallet size={24} style={styles.titleIcon} />
+                {businessName || username || "User"} Balance
+              </h2>
+              <p style={styles.userId}>
+                <MdPerson size={14} style={styles.iconInline} />
+                User ID: {user_id}
+              </p>
+              {username && businessName && username !== businessName && (
+                <p style={styles.username}>
+                  <MdBusiness size={14} style={styles.iconInline} />@{username}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
 
         <div style={styles.contentWrapper}>
           {loading ? (
-            <p>Loading balance...</p>
+            <p style={styles.loadingText}>Loading balance...</p>
           ) : error ? (
-            <p style={{ color: "red" }}>Error: {error}</p>
+            <p style={styles.errorText}>Error: {error}</p>
           ) : (
             <>
-              <div style={styles.card}>
-                <p style={styles.label}>User ID:</p>
-                <p style={styles.value}>{user_id}</p>
-                <p style={styles.label}>Total Balance:</p>
-                <p style={styles.balance}>{balance?.toFixed(2) || "0.00"}</p>
+              {/* Balance Summary Cards */}
+              <div style={styles.cardsGrid}>
+                {/* Current Balance */}
+                <div style={styles.card}>
+                  <div style={styles.cardHeader}>
+                    <MdAccountBalanceWallet size={24} style={styles.cardIcon} />
+                    <h3 style={styles.cardTitle}>Current Balance</h3>
+                  </div>
+                  <p style={styles.balance}>{balance?.toFixed(2) || "0.00"}</p>
+                </div>
+
+                {/* Total Top Up */}
+                <div style={styles.card}>
+                  <div style={styles.cardHeader}>
+                    <MdTrendingUp
+                      size={24}
+                      style={{ ...styles.cardIcon, color: "#00FF9D" }}
+                    />
+                    <h3 style={styles.cardTitle}>Total Top Up</h3>
+                  </div>
+                  <p style={styles.topUp}>{totalTopUp.toFixed(2)}</p>
+                </div>
+
+                {/* Total Used */}
+                <div style={styles.card}>
+                  <div style={styles.cardHeader}>
+                    <MdTrendingDown
+                      size={24}
+                      style={{ ...styles.cardIcon, color: "#FF6B6B" }}
+                    />
+                    <h3 style={styles.cardTitle}>Total Used</h3>
+                  </div>
+                  <p style={styles.used}>{totalUsed.toFixed(2)}</p>
+                </div>
               </div>
 
-              {/* --- NEW: Engine Usage Diagram --- */}
+              {/* Engine Usage Diagram */}
               {chartData.length > 0 && (
                 <div style={styles.chartContainer}>
                   <h3 style={styles.chartTitle}>Engine Usage Overview</h3>
@@ -214,16 +301,17 @@ const UserBalance: React.FC = () => {
                             backgroundColor: COLORS[index % COLORS.length],
                           }}
                         ></span>
-                        <span>{entry.name}</span>
+                        <span style={styles.legendText}>{entry.name}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              {/* --- END NEW: Engine Usage Diagram --- */}
 
+              {/* Transaction History */}
               {engineGroups.length > 0 && (
-                <div style={{ marginTop: "24px" }}>
+                <div style={styles.transactionSection}>
+                  <h3 style={styles.sectionTitle}>Transaction History</h3>
                   {engineGroups.map((group) => {
                     const isOpen = openGroups.includes(group.engine);
                     return (
@@ -232,7 +320,7 @@ const UserBalance: React.FC = () => {
                           style={styles.groupHeader}
                           onClick={() => toggleGroup(group.engine)}
                         >
-                          <span>{group.engine}</span>
+                          <span style={styles.groupTitle}>{group.engine}</span>
                           <span style={styles.groupArrow}>
                             {isOpen ? "▼" : "►"}
                           </span>
@@ -272,8 +360,7 @@ const UserBalance: React.FC = () => {
   );
 };
 
-// --- STYLES ---
-
+// Styles
 const styles: { [key: string]: React.CSSProperties | any } = {
   container: {
     minHeight: "100vh",
@@ -284,23 +371,12 @@ const styles: { [key: string]: React.CSSProperties | any } = {
   },
   mainContent: {
     width: "100%",
-    maxWidth: "90vw", // <-- Use a viewport width
+    maxWidth: "90vw",
     margin: "0 auto",
   },
-  contentWrapper: {
-    maxWidth: "1200px",
-    margin: "0 auto",
-    textAlign: "left",
-    marginTop: "32px",
-  },
-  pageTitle: {
-    color: "#00BDD6",
-    fontSize: "22px",
-    fontWeight: "bold",
-    marginBottom: "16px",
-  },
+  // Back Button at top
   backButton: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#8050E6",
     color: "white",
     border: "none",
     borderRadius: "6px",
@@ -308,35 +384,210 @@ const styles: { [key: string]: React.CSSProperties | any } = {
     fontSize: "14px",
     fontWeight: 500,
     cursor: "pointer",
+    marginBottom: "20px",
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    transition: "background-color 0.2s ease",
+  },
+  buttonIcon: {
+    marginRight: "4px",
+  },
+  // User Profile Styles
+  userInfoSection: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    border: "1px solid rgba(0, 189, 214, 0.3)",
+    borderRadius: "12px",
+    padding: "20px",
+    marginBottom: "24px",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+  },
+  userProfile: {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+  },
+  profileImage: {
+    width: "70px",
+    height: "70px",
+    borderRadius: "50%",
+    objectFit: "cover",
+    border: "3px solid #00BDD6",
+  },
+  profilePlaceholder: {
+    width: "70px",
+    height: "70px",
+    borderRadius: "50%",
+    backgroundColor: "rgba(0, 189, 214, 0.2)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#00BDD6",
+    border: "3px solid #00BDD6",
+  },
+  userDetails: {
+    flex: 1,
+  },
+  userName: {
+    color: "#00BDD6",
+    fontSize: "24px",
+    fontWeight: "bold",
+    margin: "0 0 8px 0",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  userId: {
+    color: "#aaa",
+    fontSize: "14px",
+    margin: "0 0 4px 0",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+  },
+  username: {
+    color: "#00FF9D",
+    fontSize: "14px",
+    margin: 0,
+    fontWeight: "500",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+  },
+  titleIcon: {
+    marginRight: "8px",
+  },
+  iconInline: {
+    marginRight: "4px",
+  },
+  contentWrapper: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+    textAlign: "left",
+  },
+  // Cards Grid
+  cardsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: "20px",
+    marginBottom: "24px",
   },
   card: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: "8px",
+    borderRadius: "12px",
     padding: "24px",
+    border: "1px solid rgba(0, 189, 214, 0.2)",
+    textAlign: "center",
+  },
+  cardHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "12px",
     marginBottom: "16px",
   },
-  label: {
+  cardIcon: {
     color: "#00BDD6",
-    fontWeight: "bold",
-    marginTop: "12px",
-    marginBottom: "4px",
   },
-  value: { fontSize: "14px", marginBottom: "8px" },
-  balance: {
-    fontSize: "28px",
-    fontWeight: "bold",
+  cardTitle: {
     color: "#00BDD6",
-    marginTop: "8px",
+    fontSize: "16px",
+    fontWeight: "bold",
+    margin: 0,
+  },
+  balance: {
+    fontSize: "32px",
+    fontWeight: "bold",
+    color: "#00FF9D",
+    margin: 0,
+  },
+  topUp: {
+    fontSize: "32px",
+    fontWeight: "bold",
+    color: "#00FF9D",
+    margin: 0,
+  },
+  used: {
+    fontSize: "32px",
+    fontWeight: "bold",
+    color: "#FF6B6B",
+    margin: 0,
+  },
+  loadingText: {
+    color: "#aaa",
+    fontSize: "16px",
+    textAlign: "center",
+    padding: "40px",
+  },
+  errorText: {
+    color: "#FF6B6B",
+    fontSize: "16px",
+    textAlign: "center",
+    padding: "40px",
+  },
+  chartContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: "12px",
+    padding: "24px",
+    marginBottom: "24px",
+    border: "1px solid rgba(0, 189, 214, 0.2)",
+  },
+  chartTitle: {
+    color: "#00BDD6",
+    fontSize: "18px",
+    fontWeight: "bold",
+    marginBottom: "16px",
+    textAlign: "center",
+  },
+  customTooltip: {
+    backgroundColor: "#2e1f3a",
+    border: "1px solid #00BDD6",
+    padding: "10px",
+    borderRadius: "4px",
+    color: "#f0f0f0",
+    fontSize: "13px",
+  },
+  chartLegend: {
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: "10px 20px",
+    marginTop: "20px",
+  },
+  legendItem: {
+    display: "flex",
+    alignItems: "center",
+    fontSize: "12px",
+    color: "#f0f0f0",
+  },
+  legendColorBox: {
+    width: "12px",
+    height: "12px",
+    borderRadius: "3px",
+    marginRight: "6px",
+  },
+  legendText: {
+    fontSize: "12px",
+  },
+  transactionSection: {
+    marginTop: "24px",
+  },
+  sectionTitle: {
+    color: "#00BDD6",
+    fontSize: "18px",
+    fontWeight: "bold",
+    marginBottom: "16px",
   },
   groupContainer: {
     marginBottom: "16px",
     backgroundColor: "rgba(255, 255, 255, 0.03)",
     borderRadius: "8px",
     overflow: "hidden",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
   },
   groupHeader: {
     color: "#00BDD6",
-    fontSize: "18px",
+    fontSize: "16px",
     fontWeight: "bold",
     padding: "12px 16px",
     cursor: "pointer",
@@ -344,6 +595,12 @@ const styles: { [key: string]: React.CSSProperties | any } = {
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "rgba(0, 189, 214, 0.1)",
+    transition: "background-color 0.2s ease",
+  },
+  groupTitle: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
   },
   groupArrow: {
     fontSize: "14px",
@@ -382,48 +639,6 @@ const styles: { [key: string]: React.CSSProperties | any } = {
     marginLeft: "16px",
     flexShrink: 0,
   }),
-  // --- NEW STYLES FOR CHART ---
-  chartContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: "8px",
-    padding: "24px",
-    marginBottom: "24px",
-    textAlign: "center",
-  },
-  chartTitle: {
-    color: "#00BDD6",
-    fontSize: "18px",
-    fontWeight: "bold",
-    marginBottom: "16px",
-  },
-  customTooltip: {
-    backgroundColor: "#2e1f3a",
-    border: "1px solid #00BDD6",
-    padding: "10px",
-    borderRadius: "4px",
-    color: "#f0f0f0",
-    fontSize: "13px",
-  },
-  chartLegend: {
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: "10px 20px",
-    marginTop: "20px",
-  },
-  legendItem: {
-    display: "flex",
-    alignItems: "center",
-    fontSize: "14px",
-    color: "#f0f0f0",
-  },
-  legendColorBox: {
-    width: "12px",
-    height: "12px",
-    borderRadius: "3px",
-    marginRight: "8px",
-  },
-  // --- END NEW STYLES ---
 };
 
 export default UserBalance;

@@ -1,20 +1,32 @@
-// UserToolsPage.tsx
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   fetchUserTools,
   updateToolStatus,
   type PendingTool,
 } from "../utils/fetchPendingTools";
+import {
+  MdArrowBack,
+  MdAccountCircle,
+  MdBuild,
+  MdBusiness,
+  MdPerson,
+  MdSearch,
+  MdClear,
+} from "react-icons/md";
 
 const UserTools: React.FC = () => {
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
+  const location = useLocation();
   const [tools, setTools] = useState<PendingTool[]>([]);
   const [filteredTools, setFilteredTools] = useState<PendingTool[]>([]);
   const [loading, setLoading] = useState(false);
   const [updatingToolId, setUpdatingToolId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Get user profile data from navigation state
+  const { profilePicture, username, businessName } = location.state || {};
 
   // Fetch user tools
   const loadUserTools = async () => {
@@ -106,7 +118,7 @@ const UserTools: React.FC = () => {
         onChange={(e) => handleStatusUpdate(tool.id, e.target.value)}
         disabled={updatingToolId === tool.id}
         style={{
-          padding: "4px 8px",
+          padding: "6px 10px",
           borderRadius: "4px",
           fontSize: "12px",
           fontWeight: "bold",
@@ -138,16 +150,50 @@ const UserTools: React.FC = () => {
   return (
     <div style={styles.container}>
       <div style={styles.mainContent}>
-        <h2 style={styles.pageTitle}>User Tools</h2>
+        {/* Back Button - Now at the top */}
         <button style={styles.backButton} onClick={handleGoBack}>
-          &larr; Go Back
+          <MdArrowBack size={18} style={styles.buttonIcon} />
+          Go Back
         </button>
+
+        {/* User Profile Header */}
+        <div style={styles.userInfoSection}>
+          <div style={styles.userProfile}>
+            {profilePicture ? (
+              <img
+                src={profilePicture}
+                alt={username || businessName}
+                style={styles.profileImage}
+              />
+            ) : (
+              <div style={styles.profilePlaceholder}>
+                <MdAccountCircle size={32} />
+              </div>
+            )}
+            <div style={styles.userDetails}>
+              <h2 style={styles.userName}>
+                <MdBuild size={24} style={styles.titleIcon} />
+                {businessName || username || "User"} Tools
+              </h2>
+              <p style={styles.userId}>
+                <MdPerson size={14} style={styles.iconInline} />
+                User ID: {userId}
+              </p>
+              {username && businessName && username !== businessName && (
+                <p style={styles.username}>
+                  <MdBusiness size={14} style={styles.iconInline} />@{username}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
 
         <div style={styles.sectionHeader}>
           <h3 style={styles.sectionTitle}>Tools by User</h3>
 
           <div style={styles.searchContainer}>
             <div style={styles.searchInputWrapper}>
+              <MdSearch size={20} style={styles.searchIcon} />
               <input
                 type="text"
                 placeholder="Search tools..."
@@ -157,7 +203,7 @@ const UserTools: React.FC = () => {
               />
               {searchTerm && (
                 <button style={styles.clearButton} onClick={clearSearch}>
-                  ×
+                  <MdClear size={16} />
                 </button>
               )}
             </div>
@@ -165,10 +211,15 @@ const UserTools: React.FC = () => {
         </div>
 
         {loading ? (
-          <p>Loading...</p>
+          <p style={styles.loadingText}>Loading tools...</p>
         ) : filteredTools.length === 0 ? (
           <div style={styles.noResults}>
             <p>No tools found for this user.</p>
+            {searchTerm && (
+              <button style={styles.clearSearchButton} onClick={clearSearch}>
+                Clear search
+              </button>
+            )}
           </div>
         ) : (
           <div style={styles.tableWrapper}>
@@ -260,26 +311,96 @@ const styles: StyleMap = {
     maxWidth: "90vw",
     margin: "0 auto",
   },
-  pageTitle: {
-    color: "#00BDD6",
-    fontSize: "22px",
-    fontWeight: "bold",
-    marginBottom: "16px",
-  },
+  // Back Button at top
   backButton: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#8050E6",
     color: "white",
     border: "none",
     borderRadius: "6px",
     padding: "10px 16px",
     fontSize: "14px",
+    fontWeight: 500,
     cursor: "pointer",
+    marginBottom: "20px",
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    transition: "background-color 0.2s ease",
+  },
+  buttonIcon: {
+    marginRight: "4px",
+  },
+  // User Profile Styles
+  userInfoSection: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    border: "1px solid rgba(0, 189, 214, 0.3)",
+    borderRadius: "12px",
+    padding: "20px",
+    marginBottom: "24px",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+  },
+  userProfile: {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+  },
+  profileImage: {
+    width: "70px",
+    height: "70px",
+    borderRadius: "50%",
+    objectFit: "cover",
+    border: "3px solid #00BDD6",
+  },
+  profilePlaceholder: {
+    width: "70px",
+    height: "70px",
+    borderRadius: "50%",
+    backgroundColor: "rgba(0, 189, 214, 0.2)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#00BDD6",
+    border: "3px solid #00BDD6",
+  },
+  userDetails: {
+    flex: 1,
+  },
+  userName: {
+    color: "#00BDD6",
+    fontSize: "24px",
+    fontWeight: "bold",
+    margin: "0 0 8px 0",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  userId: {
+    color: "#aaa",
+    fontSize: "14px",
+    margin: "0 0 4px 0",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+  },
+  username: {
+    color: "#00FF9D",
+    fontSize: "14px",
+    margin: 0,
+    fontWeight: "500",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+  },
+  titleIcon: {
+    marginRight: "8px",
+  },
+  iconInline: {
+    marginRight: "4px",
   },
   sectionHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginTop: "32px",
     marginBottom: "16px",
     flexWrap: "wrap",
     gap: "16px",
@@ -297,10 +418,17 @@ const styles: StyleMap = {
   },
   searchInputWrapper: {
     position: "relative",
+    display: "flex",
+    alignItems: "center",
+  },
+  searchIcon: {
+    position: "absolute",
+    left: "12px",
+    color: "#00BDD6",
+    zIndex: 1,
   },
   searchInput: {
-    padding: "8px 12px",
-    paddingRight: "30px",
+    padding: "8px 12px 8px 40px",
     borderRadius: "6px",
     border: "1px solid #00BDD6",
     backgroundColor: "rgba(255, 255, 255, 0.1)",
@@ -311,23 +439,43 @@ const styles: StyleMap = {
   clearButton: {
     position: "absolute",
     right: "8px",
-    top: "50%",
-    transform: "translateY(-50%)",
     background: "none",
     border: "none",
     color: "#00BDD6",
-    fontSize: "18px",
     cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "4px",
+  },
+  loadingText: {
+    color: "#aaa",
+    fontSize: "16px",
+    textAlign: "center",
+    padding: "40px",
   },
   noResults: {
     textAlign: "center",
     padding: "40px",
+    color: "#f0f0f0",
+  },
+  clearSearchButton: {
+    backgroundColor: "#007bff",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    padding: "8px 16px",
+    fontSize: "14px",
+    cursor: "pointer",
+    marginTop: "12px",
   },
   tableWrapper: {
     overflowX: "auto",
     backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: "8px",
+    borderRadius: "12px",
     padding: "16px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
   },
   table: {
     width: "100%",
@@ -335,32 +483,43 @@ const styles: StyleMap = {
     minWidth: "1000px",
   },
   tableHeaderRow: {
-    borderBottom: "2px solid #00BDD6",
+    borderBottom: "2px solid rgba(0, 189, 214, 0.3)",
+    background: "rgba(0, 189, 214, 0.05)",
   },
   tableHeader: {
-    padding: "12px 8px",
+    padding: "16px 12px",
     color: "#00BDD6",
     fontWeight: "bold",
-    fontSize: "14px",
+    fontSize: "13px",
     textAlign: "left",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
   },
   tableRow: {
-    borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+    borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+    transition: "background-color 0.2s",
+  },
+  tableRowHover: {
+    backgroundColor: "rgba(255, 255, 255, 0.02)",
   },
   tableCell: {
-    padding: "12px 8px",
-    fontSize: "13px",
+    padding: "14px 12px",
+    fontSize: "14px",
     color: "#f0f0f0",
+    whiteSpace: "nowrap",
   },
   thumbnail: {
     width: "40px",
     height: "40px",
     objectFit: "cover",
-    borderRadius: "4px",
+    borderRadius: "6px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
   },
   link: {
     color: "#00BDD6",
     textDecoration: "none",
+    fontWeight: "500",
+    transition: "color 0.2s ease",
   },
 };
 
