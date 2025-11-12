@@ -129,8 +129,7 @@ const Sidebar: React.FC = () => {
 const styles = {
   sidebar: {
     height: "100vh",
-    background:
-      "linear-gradient(180deg, rgba(20, 18, 35, 0.98) 0%, rgba(26, 26, 46, 0.98) 50%, rgba(30, 25, 45, 0.98) 100%)",
+    background: "rgba(15, 12, 29, 0.75)", // <-- This line is changed
     backdropFilter: "blur(12px)",
     padding: "28px 0",
     position: "fixed" as const,
